@@ -132,3 +132,7 @@ A root PROMPTS.md containing your raw, unedited AI chat logs or public chat link
 
 Note: Plagiarism is strictly forbidden. While we encourage AI assistance, submitting code copied from other repositories or developers will result in immediate rejection. We want to see your work, augmented by modern tools.
 ```
+https://chatgpt.com/share/e/6ade2d1b-d27c-834f-a261-877d0b853ebe
+
+https://claude.ai/share/5d445eeb-bec7-4525-ad0a-322863667fe4
+

@@ -101,7 +101,13 @@ npm run build
 
 ## Screenshots
 
-Run the backend with demo data, open the frontend, then capture the dashboard and admin form. Save them as `screenshots/showroom.png` and `screenshots/admin.png` and replace this section with image embeds before submitting. This environment could build the UI but could not launch a browser to capture genuine application screenshots; no mock screenshot is presented as a real run.
+![Showroom](screenshots/showroom.png)
+
+![Updated showroom](screenshots/updated%20showroom.png)
+
+![Admin controls](screenshots/admin1.png)
+
+![Admin form](screenshots/admin2.png)
 
 ## My AI Usage
 
