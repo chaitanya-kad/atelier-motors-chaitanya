@@ -7,7 +7,7 @@ from app.main import create_app
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DATABASE_PATH", str(tmp_path / "inventory.db"))
-    monkeypatch.setenv("JWT_SECRET", "test-secret-only")
+    monkeypatch.setenv("JWT_SECRET", "test-secret-only-for-hmac-sha256-testing")
     with TestClient(create_app()) as test_client:
         yield test_client
 
