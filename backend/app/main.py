@@ -138,16 +138,23 @@ def create_app():
             return [present(row) for row in db.execute("SELECT * FROM vehicles ORDER BY id DESC")]
 
     @app.get("/api/vehicles/search")
-    def search(_user: Annotated[dict, Depends(current_user)], make: str | None = None, model: str | None = None,
+    def search(_user: Annotated[dict, Depends(current_user)], q: str | None = None,
+               make: str | None = None, model: str | None = None,
                category: str | None = None, min_price: PriceLimit = None,
                max_price: PriceLimit = None):
         if min_price is not None and max_price is not None and min_price > max_price:
             raise HTTPException(422, "Minimum price cannot exceed maximum price")
         clauses, values = [], []
+        def pattern(value):
+            return "%" + value.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+        if q:
+            clauses.append("(LOWER(make) LIKE ? ESCAPE '\\' OR LOWER(model) LIKE ? ESCAPE '\\' OR LOWER(category) LIKE ? ESCAPE '\\')")
+            values.extend([pattern(q)] * 3)
         for field, value in (("make", make), ("model", model), ("category", category)):
             if value:
                 clauses.append(f"LOWER({field}) LIKE ? ESCAPE '\\'")
-                values.append("%" + value.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%")
+                values.append(pattern(value))
         if min_price is not None:
             clauses.append("price_cents >= ?")
             values.append(int(min_price * 100))
