@@ -4,7 +4,7 @@ A full-stack car dealership inventory kata. The React showroom lets members brow
 
 ## What makes it work
 
-- **Inventory safety:** purchasing uses a conditional SQLite update inside `BEGIN IMMEDIATE`. When two requests race for the last unit, one succeeds and the other receives `409 Conflict`.
+- **Inventory safety:** purchasing uses a conditional SQLite update inside `BEGIN IMMEDIATE`. When two requests race for the last unit, one succeeds and the other receives `409 Conflict`. Restock also enforces the one-million-unit cap inside the same transaction.
 - **Money is stored exactly:** prices are validated to two decimal places and stored as integer cents. The API currently serializes prices as JSON numbers, so consumers should avoid binary-float arithmetic for money.
 - **Role separation:** all vehicle routes require a JWT. Admin accounts alone can add, edit, delete, and restock. Registration always creates a regular user; the CLI provisions admins.
 - **Useful UX:** responsive showroom, filters, stock badges, disabled sold-out buttons, confirmation dialogs, feedback, and admin controls.
@@ -81,7 +81,7 @@ Supply `Authorization: Bearer <token>` for every vehicle endpoint. JSON request 
 | PUT | `/api/vehicles/{id}` | Admin | Replace vehicle details |
 | DELETE | `/api/vehicles/{id}` | Admin | Delete vehicle; `204` |
 | POST | `/api/vehicles/{id}/purchase` | Member | Decrease quantity by one; `409` if sold out |
-| POST | `/api/vehicles/{id}/restock` | Admin | Increase quantity with `{ "amount": 2 }` |
+| POST | `/api/vehicles/{id}/restock` | Admin | Increase quantity with `{ "amount": 2 }`; `409` if the stock cap would be exceeded |
 
 Vehicle body: `{ "make": "Honda", "model": "Civic", "category": "Sedan", "price": 24500.50, "quantity": 2 }`. Invalid input returns `422`, missing vehicles `404`, invalid credentials `401`, and insufficient role `403`. Search text is case insensitive and partial; price limits are inclusive and accept two decimal places. Vehicle IDs are assigned by the database. Add and update are admin-only by design, matching the admin management UI.
 
@@ -95,7 +95,7 @@ npm test
 npm run build
 ```
 
-**History, honestly:** the first “red” commit failed at test collection because the app module did not exist; it is not an assertion-level red cycle. The initial implementation was also too large for ideal TDD. Later commits contain genuine failing assertions for boundary/JWT/email validation and combined search, followed by passing fixes. The stock stress test uses 20 synchronized calls for 5 units. Tests use real temporary SQLite files. See [TEST_REPORT.md](TEST_REPORT.md) for captured results.
+**History, honestly:** the first “red” commit failed at test collection because the app module did not exist; it is not an assertion-level red cycle. The initial implementation was also too large for ideal TDD. Later commits contain genuine failing assertions for boundary/JWT/email validation, combined search, restock limits, and pending-search UI, followed by passing fixes. One frontend refactor commit also bundled new behavior and tests without a prior red phase. The stock stress test uses 20 synchronized calls for 5 units. Tests use real temporary SQLite files. See [TEST_REPORT.md](TEST_REPORT.md) for captured results.
 
 ## Screenshots
 
@@ -105,9 +105,9 @@ Run the backend with demo data, open the frontend, then capture the dashboard an
 
 **Tool:** ChatGPT (Codex).
 
-**How:** I used it to work through the assignment requirements, draft behavior tests before implementation, implement the FastAPI/SQLite and React/Tailwind code, debug a failing login test, and prepare documentation. The code was then checked with the test suite and a production frontend build. The visual UI has not yet been inspected in a browser in this environment.
+**How:** I used it to work through the assignment requirements, draft behavior tests before implementation, implement the FastAPI/SQLite and React/Tailwind code, debug a failing login test, and prepare documentation. I then used Claude as an independent judge-style reviewer. Its findings drove new failing tests and fixes for input limits, token validation, API search, stale stock, restock consistency, and the pending-search state. The code was checked with backend and frontend tests and a production frontend build. The visual UI has not yet been inspected in a browser in this environment.
 
-**Reflection:** AI sped up the first implementation and helped surface cases such as duplicate registration, zero stock, race conditions, and role boundaries. Its output still needs independent review: tests and a successful build verify specific behavior, while a browser review, accessibility pass, and deployment check remain for the final submission. I would explain the atomic SQL update, money representation, admin provisioning, and tradeoffs in an interview rather than treating generated code as self-explanatory.
+**Reflection:** AI sped up the first implementation but also produced a too-large initial commit and missed several edge cases. Claude's review exposed those gaps; I reproduced them in tests and fixed the code instead of treating the first output as final. Tests and a successful build verify specific behavior, while a browser review, accessibility pass, and deployment check remain for the final submission. I would explain the atomic SQL update, money representation, admin provisioning, and tradeoffs in an interview rather than treating generated code as self-explanatory.
 
 The raw assignment prompt is recorded in [PROMPTS.md](PROMPTS.md). Add the complete raw chat export or public share link before submitting. The local Git history has a generic author identity and no co-author trailers; set your own identity and satisfy the assignment's trailer policy before publication.
 

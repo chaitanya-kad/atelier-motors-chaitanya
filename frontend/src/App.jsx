@@ -46,6 +46,9 @@ function App() {
   const [sort, setSort] = useState("newest");
   const [menuOpen, setMenuOpen] = useState(false);
   const requestVersion = useRef(0);
+  const toastTimer = useRef(null);
+
+  useEffect(() => () => window.clearTimeout(toastTimer.current), []);
 
   const params = new URLSearchParams();
   if (query.trim()) params.set("q", query.trim());
@@ -56,7 +59,8 @@ function App() {
 
   const notify = (message) => {
     setToast(message);
-    window.setTimeout(() => setToast(""), 3500);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(""), 3500);
   };
   const logout = () => {
     localStorage.removeItem("atelier-session");

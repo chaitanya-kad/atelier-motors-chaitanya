@@ -45,6 +45,16 @@ def test_missing_exp_claim_rejected_and_deleted_user_revoked(client, monkeypatch
     assert client.get("/api/vehicles", headers=headers).status_code == 401
 
 
+def test_expired_token_is_rejected(client):
+    account(client)
+    expired = jwt.encode(
+        {"sub": "1", "exp": datetime.now(timezone.utc) - timedelta(seconds=1)},
+        "test-secret-only-for-hmac-sha256-testing",
+        algorithm="HS256",
+    )
+    assert client.get("/api/vehicles", headers={"Authorization": f"Bearer {expired}"}).status_code == 401
+
+
 def test_missing_vehicle_restock_and_search_filters(client):
     headers = admin(client)
     assert client.post("/api/vehicles/99/restock", json={"amount": 1}, headers=headers).status_code == 404
