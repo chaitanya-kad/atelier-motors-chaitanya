@@ -52,3 +52,12 @@ def test_missing_vehicle_restock_and_search_filters(client):
     assert client.get("/api/vehicles/search?model=Civic%20%25&min_price=100", headers=headers).json()[0]["id"] == car["id"]
     assert client.get("/api/vehicles/search?model=%25", headers=headers).json()[0]["id"] == car["id"]
     assert client.get("/api/vehicles/search?model=_", headers=headers).json() == []
+
+
+def test_general_search_matches_make_model_or_category(client):
+    headers = admin(client)
+    client.post("/api/vehicles", headers=headers, json=vehicle(make="Volvo", model="XC60", category="SUV"))
+    client.post("/api/vehicles", headers=headers, json=vehicle(make="Honda", model="Civic", category="Sedan"))
+    for term in ("volv", "xc60", "suv"):
+        response = client.get("/api/vehicles/search", params={"q": term}, headers=headers)
+        assert [car["model"] for car in response.json()] == ["XC60"]
