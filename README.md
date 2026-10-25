@@ -5,7 +5,7 @@ A full-stack car dealership inventory kata. The React showroom lets members brow
 ## What makes it work
 
 - **Inventory safety:** purchasing uses a conditional SQLite update inside `BEGIN IMMEDIATE`. When two requests race for the last unit, one succeeds and the other receives `409 Conflict`.
-- **Money stays exact:** prices are validated to two decimal places and stored as integer cents.
+- **Money is stored exactly:** prices are validated to two decimal places and stored as integer cents. The API currently serializes prices as JSON numbers, so consumers should avoid binary-float arithmetic for money.
 - **Role separation:** all vehicle routes require a JWT. Admin accounts alone can add, edit, delete, and restock. Registration always creates a regular user; the CLI provisions admins.
 - **Useful UX:** responsive showroom, filters, stock badges, disabled sold-out buttons, confirmation dialogs, feedback, and admin controls.
 - **Portable demo:** SQLite needs no external service; `seed_demo.py` populates an empty database with six example cars.
@@ -76,14 +76,14 @@ Supply `Authorization: Bearer <token>` for every vehicle endpoint. JSON request 
 | POST | `/api/auth/register` | Public | Create member; returns token and user |
 | POST | `/api/auth/login` | Public | Verify credentials; returns token and user |
 | GET | `/api/vehicles` | Member | All vehicles, newest first |
-| GET | `/api/vehicles/search` | Member | Optional `make`, `model`, `category`, `min_price`, `max_price` |
+| GET | `/api/vehicles/search` | Member | Optional `q` (across make/model/category), `make`, `model`, `category`, `min_price`, `max_price` |
 | POST | `/api/vehicles` | Admin | Create vehicle |
 | PUT | `/api/vehicles/{id}` | Admin | Replace vehicle details |
 | DELETE | `/api/vehicles/{id}` | Admin | Delete vehicle; `204` |
 | POST | `/api/vehicles/{id}/purchase` | Member | Decrease quantity by one; `409` if sold out |
 | POST | `/api/vehicles/{id}/restock` | Admin | Increase quantity with `{ "amount": 2 }` |
 
-Vehicle body: `{ "make": "Honda", "model": "Civic", "category": "Sedan", "price": 24500.50, "quantity": 2 }`. Invalid input returns `422`, missing vehicles `404`, invalid credentials `401`, and insufficient role `403`. Search text is case insensitive and partial; price limits are inclusive. Vehicle IDs are assigned by the database.
+Vehicle body: `{ "make": "Honda", "model": "Civic", "category": "Sedan", "price": 24500.50, "quantity": 2 }`. Invalid input returns `422`, missing vehicles `404`, invalid credentials `401`, and insufficient role `403`. Search text is case insensitive and partial; price limits are inclusive and accept two decimal places. Vehicle IDs are assigned by the database. Add and update are admin-only by design, matching the admin management UI.
 
 ## Tests and TDD
 
@@ -91,10 +91,11 @@ Vehicle body: `{ "make": "Honda", "model": "Civic", "category": "Sedan", "price"
 cd backend
 python -m pytest --cov=app --cov-report=term-missing -q
 cd ../frontend
+npm test
 npm run build
 ```
 
-The initial commit (`test: ... (red)`) contains tests that fail because the implementation does not exist. The next commit (`feat: ... (green)`) implements and passes them. A following commit adds a cross-connection race test and SPA. The tests use real temporary SQLite files, and the race test makes two purchase calls concurrently. See [TEST_REPORT.md](TEST_REPORT.md) for captured results.
+**History, honestly:** the first “red” commit failed at test collection because the app module did not exist; it is not an assertion-level red cycle. The initial implementation was also too large for ideal TDD. Later commits contain genuine failing assertions for boundary/JWT/email validation and combined search, followed by passing fixes. The stock stress test uses 20 synchronized calls for 5 units. Tests use real temporary SQLite files. See [TEST_REPORT.md](TEST_REPORT.md) for captured results.
 
 ## Screenshots
 
@@ -108,7 +109,7 @@ Run the backend with demo data, open the frontend, then capture the dashboard an
 
 **Reflection:** AI sped up the first implementation and helped surface cases such as duplicate registration, zero stock, race conditions, and role boundaries. Its output still needs independent review: tests and a successful build verify specific behavior, while a browser review, accessibility pass, and deployment check remain for the final submission. I would explain the atomic SQL update, money representation, admin provisioning, and tradeoffs in an interview rather than treating generated code as self-explanatory.
 
-The raw assignment prompt is recorded in [PROMPTS.md](PROMPTS.md). Add a complete raw chat export or public share link before submitting if the evaluator requires the full conversation. The local Git history currently has a generic author identity; set your own Git identity and satisfy the assignment's AI co-authorship trailer policy before publication.
+The raw assignment prompt is recorded in [PROMPTS.md](PROMPTS.md). Add the complete raw chat export or public share link before submitting. The local Git history has a generic author identity and no co-author trailers; set your own identity and satisfy the assignment's trailer policy before publication.
 
 ## Scope notes
 

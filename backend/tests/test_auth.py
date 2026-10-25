@@ -16,3 +16,10 @@ def test_duplicate_and_invalid_credentials(client):
     assert client.post("/api/auth/register", json={"email": "BUYER@example.com", "password": "StrongPass123!"}).status_code == 409
     assert client.post("/api/auth/login", json={"email": "buyer@example.com", "password": "wrong"}).status_code == 401
     assert client.post("/api/auth/register", json={"email": "bad", "password": "short"}).status_code == 422
+
+
+def test_validation_does_not_echo_password(client):
+    password = "my-private-password"
+    result = client.post("/api/auth/register", json={"email": "bad", "password": password})
+    assert result.status_code == 422
+    assert password not in result.text
