@@ -61,3 +61,12 @@ def test_general_search_matches_make_model_or_category(client):
     for term in ("volv", "xc60", "suv"):
         response = client.get("/api/vehicles/search", params={"q": term}, headers=headers)
         assert [car["model"] for car in response.json()] == ["XC60"]
+
+
+def test_restock_cannot_exceed_editable_quantity_limit(client):
+    headers = admin(client)
+    item = client.post("/api/vehicles", headers=headers, json=vehicle(quantity=1_000_000)).json()
+    result = client.post(f"/api/vehicles/{item['id']}/restock", headers=headers, json={"amount": 1})
+    assert result.status_code == 409
+    assert client.get("/api/vehicles", headers=headers).json()[0]["quantity"] == 1_000_000
+    assert client.put(f"/api/vehicles/{item['id']}", headers=headers, json=vehicle(quantity=1_000_000, price=50)).status_code == 200

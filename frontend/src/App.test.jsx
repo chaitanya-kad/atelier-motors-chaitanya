@@ -113,3 +113,18 @@ it("preserves a custom category in the admin editor", async () => {
     }).value,
   ).toBe("Hatchback");
 });
+
+it("shows search progress instead of an empty state while results are pending", async () => {
+  let finishSearch;
+  vi.stubGlobal("fetch", vi.fn(async (url) => url.includes("/search")
+    ? new Promise((resolve) => { finishSearch = () => resolve(response([car])); })
+    : response([car])));
+  render(<App />);
+  await screen.findByRole("button", { name: "Purchase Honda Civic" });
+  fireEvent.change(screen.getByRole("textbox", { name: "Search vehicles" }), { target: { value: "Honda" } });
+  expect(screen.getByText("Searching vehicles…")).toBeTruthy();
+  expect(screen.queryByText("No vehicles found")).toBeNull();
+  await waitFor(() => expect(finishSearch).toBeTypeOf("function"));
+  finishSearch();
+  await screen.findByRole("button", { name: "Purchase Honda Civic" });
+});
