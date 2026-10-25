@@ -14,7 +14,7 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 import jwt
 
 from .db import connect, init_db
-from .inventory import OutOfStock, VehicleMissing, change_stock
+from .inventory import OutOfStock, StockLimitExceeded, VehicleMissing, change_stock
 from .security import DUMMY_PASSWORD_HASH, hash_password, issue_token, token_user_id, verify_password
 
 
@@ -200,6 +200,8 @@ def create_app():
     def restock(vehicle_id: VehicleId, body: RestockInput, _admin: Annotated[dict, Depends(admin_user)]):
         try:
             return present(change_stock(vehicle_id, body.amount))
+        except StockLimitExceeded as exc:
+            raise HTTPException(409, "Restock exceeds the 1,000,000-unit limit") from exc
         except VehicleMissing as exc:
             raise HTTPException(404, "Vehicle not found") from exc
 

@@ -42,6 +42,7 @@ function App() {
   const [maxPrice, setMaxPrice] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [searchResults, setSearchResults] = useState(null);
+  const [resolvedSearch, setResolvedSearch] = useState("");
   const [sort, setSort] = useState("newest");
   const [menuOpen, setMenuOpen] = useState(false);
   const requestVersion = useRef(0);
@@ -62,6 +63,7 @@ function App() {
     setSession(null);
     setVehicles([]);
     setSearchResults(null);
+    setResolvedSearch("");
     setModal(null);
   };
   const refresh = async () => {
@@ -69,12 +71,13 @@ function App() {
     setLoading(true);
     try {
       setVehicles(await request("/vehicles", { token: session.token }));
-      if (filterQuery)
-        setSearchResults(
-          await request(`/vehicles/search?${filterQuery}`, {
-            token: session.token,
-          }),
-        );
+      if (filterQuery) {
+        const matches = await request(`/vehicles/search?${filterQuery}`, {
+          token: session.token,
+        });
+        setSearchResults(matches);
+        setResolvedSearch(filterQuery);
+      }
     } catch (err) {
       if (err.status === 401) logout();
       else notify(err.message);
@@ -89,6 +92,7 @@ function App() {
   useEffect(() => {
     if (!session?.token || !filterQuery) {
       setSearchResults(null);
+      setResolvedSearch("");
       return;
     }
     const version = ++requestVersion.current;
@@ -97,9 +101,16 @@ function App() {
         const matches = await request(`/vehicles/search?${filterQuery}`, {
           token: session.token,
         });
-        if (version === requestVersion.current) setSearchResults(matches);
+        if (version === requestVersion.current) {
+          setSearchResults(matches);
+          setResolvedSearch(filterQuery);
+        }
       } catch (err) {
-        if (version === requestVersion.current) notify(err.message);
+        if (version === requestVersion.current) {
+          setSearchResults([]);
+          setResolvedSearch(filterQuery);
+          notify(err.message);
+        }
       }
     }, 250);
     return () => {
@@ -123,6 +134,7 @@ function App() {
   ];
   const isAdmin = session?.user?.role === "admin";
   const inStock = vehicles.filter((car) => car.quantity > 0).length;
+  const searching = Boolean(filterQuery && resolvedSearch !== filterQuery);
 
   async function authenticate(event) {
     event.preventDefault();
@@ -497,6 +509,10 @@ function App() {
               </div>
               {loading ? (
                 <div className="empty-state">Loading the collection…</div>
+              ) : searching ? (
+                <div className="empty-state" role="status">
+                  Searching vehicles…
+                </div>
               ) : filtered.length ? (
                 <div className="vehicle-grid grid grid-cols-1 gap-[22px] md:grid-cols-2 xl:grid-cols-3">
                   {filtered.map((car) => (
