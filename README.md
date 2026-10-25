@@ -1,5 +1,7 @@
 # Atelier Motors
 
+**Public repository:** https://github.com/chaitanya-kad/atelier-motors-chaitanya
+
 A full-stack car dealership inventory kata. The React showroom lets members browse, filter, and purchase vehicles; administrators manage the catalog and restock inventory. FastAPI serves a token-protected REST API backed by a persistent SQLite file.
 
 ## What makes it work
@@ -113,4 +115,4 @@ The raw assignment prompt is recorded in [PROMPTS.md](PROMPTS.md). Add the compl
 
 ## Scope notes
 
-This kata treats “purchase” as an inventory decrement; it does not collect payment or produce an order receipt. There is no hosted deployment or public repository URL in this local source bundle. SQLite is a good local database here; a hosted multi-instance deployment should use PostgreSQL and a managed secret. JWTs expire after 12 hours, and logging out removes the token from browser storage. In a larger app, add refresh/revocation, rate limiting, audit records, pagination, and migration tooling.
+This kata treats “purchase” as an inventory decrement; it does not collect payment or produce an order receipt. There is no hosted live deployment. SQLite is a good local database here; a hosted multi-instance deployment should use PostgreSQL and a managed secret. JWTs expire after 12 hours, and logging out removes the token from browser storage. In a larger app, add refresh/revocation, rate limiting, audit records, pagination, and migration tooling.
