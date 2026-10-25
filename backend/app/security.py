@@ -26,8 +26,8 @@ def verify_password(password: str, stored: str) -> bool:
 
 def secret() -> str:
     value = os.getenv("JWT_SECRET")
-    if not value or len(value) < 12:
-        raise RuntimeError("Set JWT_SECRET to a random string of at least 12 characters")
+    if not value or len(value.encode()) < 32:
+        raise RuntimeError("Set JWT_SECRET to a random string of at least 32 bytes")
     return value
 
 
@@ -36,5 +36,9 @@ def issue_token(user_id: int) -> str:
 
 
 def token_user_id(token: str) -> int:
-    payload = jwt.decode(token, secret(), algorithms=["HS256"])
+    payload = jwt.decode(token, secret(), algorithms=["HS256"], options={"require": ["exp", "sub"]})
     return int(payload["sub"])
+
+
+# Hash an unrelated password once; unknown accounts still run the same KDF.
+DUMMY_PASSWORD_HASH = hash_password("unknown-account-placeholder")
