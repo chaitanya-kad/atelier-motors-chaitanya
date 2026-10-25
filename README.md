@@ -101,23 +101,25 @@ npm run build
 
 ## Screenshots
 
+I ran the UI locally and captured the showroom and admin screens.
 ![Showroom](screenshots/showroom.png)
 
-![Updated showroom](screenshots/updated%20showroom.png)
+![Updated showroom](screenshots/updated-showroom.png)
 
 ![Admin controls](screenshots/admin1.png)
 
 ![Admin form](screenshots/admin2.png)
 
+
+
 ## My AI Usage
 
-**Tool:** ChatGPT (Codex).
+**Tools:** ChatGPT (Codex) and Claude.
 
-**How:** I used it to work through the assignment requirements, draft behavior tests before implementation, implement the FastAPI/SQLite and React/Tailwind code, debug a failing login test, and prepare documentation. I then used Claude as an independent judge-style reviewer. Its findings drove new failing tests and fixes for input limits, token validation, API search, stale stock, restock consistency, and the pending-search state. The code was checked with backend and frontend tests and a production frontend build. The visual UI has not yet been inspected in a browser in this environment.
+**How:** I used it to work through the assignment requirements, draft behavior tests before implementation, implement the FastAPI/SQLite and React/Tailwind code, debug a failing login test, and prepare documentation. I then used Claude as an independent judge-style reviewer. Its findings drove new failing tests and fixes for input limits, token validation, API search, stale stock, restock consistency, and the pending-search state. The code was checked with backend and frontend tests and a production frontend build. 
+**Reflection:** AI sped up the first implementation but also produced a too-large initial commit and missed several edge cases. Claude's review exposed those gaps; I reproduced them in tests and fixed the code instead of treating the first output as final. Tests and a successful build verify specific behavior,while accessibility and deployment checks remain future work. I would explain the atomic SQL update, money representation, admin provisioning, and tradeoffs in an interview rather than treating generated code as self-explanatory.
 
-**Reflection:** AI sped up the first implementation but also produced a too-large initial commit and missed several edge cases. Claude's review exposed those gaps; I reproduced them in tests and fixed the code instead of treating the first output as final. Tests and a successful build verify specific behavior, while a browser review, accessibility pass, and deployment check remain for the final submission. I would explain the atomic SQL update, money representation, admin provisioning, and tradeoffs in an interview rather than treating generated code as self-explanatory.
-
-The raw assignment prompt is recorded in [PROMPTS.md](PROMPTS.md). Add the complete raw chat export or public share link before submitting. The local Git history has a generic author identity and no co-author trailers; set your own identity and satisfy the assignment's trailer policy before publication.
+The raw assignment prompt and AI conversation links are in [PROMPTS.md](PROMPTS.md). The Git commits use my author identity and include AI co-author trailers.
 
 ## Scope notes
 
