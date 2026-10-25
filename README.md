@@ -1,0 +1,115 @@
+# Atelier Motors
+
+A full-stack car dealership inventory kata. The React showroom lets members browse, filter, and purchase vehicles; administrators manage the catalog and restock inventory. FastAPI serves a token-protected REST API backed by a persistent SQLite file.
+
+## What makes it work
+
+- **Inventory safety:** purchasing uses a conditional SQLite update inside `BEGIN IMMEDIATE`. When two requests race for the last unit, one succeeds and the other receives `409 Conflict`.
+- **Money stays exact:** prices are validated to two decimal places and stored as integer cents.
+- **Role separation:** all vehicle routes require a JWT. Admin accounts alone can add, edit, delete, and restock. Registration always creates a regular user; the CLI provisions admins.
+- **Useful UX:** responsive showroom, filters, stock badges, disabled sold-out buttons, confirmation dialogs, feedback, and admin controls.
+- **Portable demo:** SQLite needs no external service; `seed_demo.py` populates an empty database with six example cars.
+
+## Stack
+
+| Layer | Technology |
+| --- | --- |
+| API | Python 3.12+, FastAPI, Pydantic, Uvicorn |
+| Data | SQLite file, standard-library `sqlite3` |
+| Auth | PBKDF2-SHA256 salted password hashes, 12-hour HS256 JWTs |
+| UI | React 19, Vite 6, HTML5, CSS3, Tailwind CSS 3, Lucide icons |
+| Tests | Pytest, FastAPI TestClient, temporary SQLite files |
+
+## Run locally
+
+### 1. Backend
+
+```bash
+cd backend
+python -m venv .venv
+# macOS/Linux:
+source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+```
+
+Set a secret and a database path in the same terminal. Generate a random secret for any non-demo use.
+
+```bash
+# macOS/Linux
+export JWT_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+export DATABASE_PATH="./inventory.db"
+python seed_demo.py                  # optional; only fills an empty catalog
+python create_admin.py admin@example.com  # prompts for a password
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+```powershell
+# Windows PowerShell
+$env:JWT_SECRET = python -c "import secrets; print(secrets.token_urlsafe(48))"
+$env:DATABASE_PATH = "./inventory.db"
+python seed_demo.py
+python create_admin.py admin@example.com
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+The API docs are at `http://localhost:8000/docs`. `create_admin.py` can create an admin or promote an existing account; use your own email and password. Never commit the SQLite database or secret.
+
+### 2. Frontend
+
+In a second terminal:
+
+```bash
+cd frontend
+npm ci
+npm run dev -- --host 127.0.0.1
+```
+
+Open `http://localhost:5173`. The Vite development server forwards `/api` requests to port 8000. Register as a member to browse and purchase, or log in as the admin created above to manage vehicles. For a production host, route `/api` to the backend or change the frontend API base and configure the backend CORS origins.
+
+## API contract
+
+Supply `Authorization: Bearer <token>` for every vehicle endpoint. JSON request bodies are shown for the mutations.
+
+| Method | Path | Access | Behavior |
+| --- | --- | --- | --- |
+| POST | `/api/auth/register` | Public | Create member; returns token and user |
+| POST | `/api/auth/login` | Public | Verify credentials; returns token and user |
+| GET | `/api/vehicles` | Member | All vehicles, newest first |
+| GET | `/api/vehicles/search` | Member | Optional `make`, `model`, `category`, `min_price`, `max_price` |
+| POST | `/api/vehicles` | Admin | Create vehicle |
+| PUT | `/api/vehicles/{id}` | Admin | Replace vehicle details |
+| DELETE | `/api/vehicles/{id}` | Admin | Delete vehicle; `204` |
+| POST | `/api/vehicles/{id}/purchase` | Member | Decrease quantity by one; `409` if sold out |
+| POST | `/api/vehicles/{id}/restock` | Admin | Increase quantity with `{ "amount": 2 }` |
+
+Vehicle body: `{ "make": "Honda", "model": "Civic", "category": "Sedan", "price": 24500.50, "quantity": 2 }`. Invalid input returns `422`, missing vehicles `404`, invalid credentials `401`, and insufficient role `403`. Search text is case insensitive and partial; price limits are inclusive. Vehicle IDs are assigned by the database.
+
+## Tests and TDD
+
+```bash
+cd backend
+python -m pytest --cov=app --cov-report=term-missing -q
+cd ../frontend
+npm run build
+```
+
+The initial commit (`test: ... (red)`) contains tests that fail because the implementation does not exist. The next commit (`feat: ... (green)`) implements and passes them. A following commit adds a cross-connection race test and SPA. The tests use real temporary SQLite files, and the race test makes two purchase calls concurrently. See [TEST_REPORT.md](TEST_REPORT.md) for captured results.
+
+## Screenshots
+
+Run the backend with demo data, open the frontend, then capture the dashboard and admin form. Save them as `screenshots/showroom.png` and `screenshots/admin.png` and replace this section with image embeds before submitting. This environment could build the UI but could not launch a browser to capture genuine application screenshots; no mock screenshot is presented as a real run.
+
+## My AI Usage
+
+**Tool:** ChatGPT (Codex).
+
+**How:** I used it to work through the assignment requirements, draft behavior tests before implementation, implement the FastAPI/SQLite and React/Tailwind code, debug a failing login test, and prepare documentation. The code was then checked with the test suite and a production frontend build. The visual UI has not yet been inspected in a browser in this environment.
+
+**Reflection:** AI sped up the first implementation and helped surface cases such as duplicate registration, zero stock, race conditions, and role boundaries. Its output still needs independent review: tests and a successful build verify specific behavior, while a browser review, accessibility pass, and deployment check remain for the final submission. I would explain the atomic SQL update, money representation, admin provisioning, and tradeoffs in an interview rather than treating generated code as self-explanatory.
+
+The raw assignment prompt is recorded in [PROMPTS.md](PROMPTS.md). Add a complete raw chat export or public share link before submitting if the evaluator requires the full conversation. The local Git history currently has a generic author identity; set your own Git identity and satisfy the assignment's AI co-authorship trailer policy before publication.
+
+## Scope notes
+
+This kata treats “purchase” as an inventory decrement; it does not collect payment or produce an order receipt. There is no hosted deployment or public repository URL in this local source bundle. SQLite is a good local database here; a hosted multi-instance deployment should use PostgreSQL and a managed secret. JWTs expire after 12 hours, and logging out removes the token from browser storage. In a larger app, add refresh/revocation, rate limiting, audit records, pagination, and migration tooling.

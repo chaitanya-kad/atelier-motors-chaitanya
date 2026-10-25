@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, field_validator
 import jwt
 
 from .db import connect, init_db
+from .inventory import OutOfStock, VehicleMissing, change_stock
 from .security import hash_password, issue_token, token_user_id, verify_password
 
 
@@ -170,27 +171,19 @@ def create_app():
 
     @app.post("/api/vehicles/{vehicle_id}/purchase")
     def purchase(vehicle_id: int, _user: Annotated[dict, Depends(current_user)]):
-        with connect() as db:
-            db.execute("BEGIN IMMEDIATE")
-            cursor = db.execute("UPDATE vehicles SET quantity = quantity - 1 WHERE id = ? AND quantity > 0", (vehicle_id,))
-            if cursor.rowcount == 0:
-                exists = db.execute("SELECT 1 FROM vehicles WHERE id = ?", (vehicle_id,)).fetchone()
-                db.execute("ROLLBACK")
-                raise HTTPException(409 if exists else 404, "Out of stock" if exists else "Vehicle not found")
-            result = get_vehicle(db, vehicle_id)
-            db.execute("COMMIT")
-            return result
+        try:
+            return present(change_stock(vehicle_id, -1))
+        except OutOfStock as exc:
+            raise HTTPException(409, "Out of stock") from exc
+        except VehicleMissing as exc:
+            raise HTTPException(404, "Vehicle not found") from exc
 
     @app.post("/api/vehicles/{vehicle_id}/restock")
     def restock(vehicle_id: int, body: RestockInput, _admin: Annotated[dict, Depends(admin_user)]):
-        with connect() as db:
-            db.execute("BEGIN IMMEDIATE")
-            if db.execute("UPDATE vehicles SET quantity = quantity + ? WHERE id = ?", (body.amount, vehicle_id)).rowcount == 0:
-                db.execute("ROLLBACK")
-                raise HTTPException(404, "Vehicle not found")
-            result = get_vehicle(db, vehicle_id)
-            db.execute("COMMIT")
-            return result
+        try:
+            return present(change_stock(vehicle_id, body.amount))
+        except VehicleMissing as exc:
+            raise HTTPException(404, "Vehicle not found") from exc
 
     return app
 
